@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import AdminLayout from "../Layouts/AdminLayout";
 import AdminDashboard from "./Admin/AdminDsb";
 import AdminTournaments from "./Admin/AdminTournaments";
+import UserManage from "./Admin/AdminUserManage";
 import { Home, Trophy } from "lucide-react";
 
 const AdminPages = ({ user }) => {  
@@ -19,6 +20,12 @@ const AdminPages = ({ user }) => {
       label: "Tournaments",
       icon: Trophy,
       component: AdminTournaments,
+    },
+    {
+      path: "UserManage",
+      label: "User Management",
+      icon: Trophy,
+      component: UserManage,
     },
   ];
 
