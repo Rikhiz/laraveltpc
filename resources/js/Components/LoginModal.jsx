@@ -43,16 +43,16 @@ const LoginModal = ({ show, onClose }) => {
       <form onSubmit={handleLogin} className="flex flex-col gap-5">
         {/* Email */}
         <div className="flex flex-col gap-2">
-          <label className="text-[#F2F2F2] text-sm font-medium">Email</label>
+          <label className="text-[#F2F2F2] text-sm font-medium">Email or Username</label>
           <input
-            type="email"
-            name="email"
-            value={data.email}
-            onChange={(e) => setData("email", e.target.value)}
+            type="text"
+            name="login"
+            value={data.login}
+            onChange={(e) => setData("login", e.target.value)}
             className={`bg-[#0D0C0C]/50 border rounded-md p-3 text-[#F2F2F2] text-base outline-none transition-colors ${
               errors.email ? "border-red-500" : "border-[#69747C]"
             } focus:border-[#FF2146]`}
-            placeholder="Enter your email"
+            placeholder="Enter your email or username"
             autoComplete="username"
             required
           />
