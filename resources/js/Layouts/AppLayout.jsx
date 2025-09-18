@@ -1,11 +1,18 @@
-import React from "react";
-import Header from "@/Components/Header";
+import React from 'react';
+import Header from '@/Components/Header'; // Sesuaikan path dengan struktur project Anda
+import Footer from '@/Components/Footer';
 
-export default function AppLayout({ children }) {
-  return (
-    <div className="min-h-screen bg-black">
-      <Header />
-      <main className="max-w-7xl mx-auto p-6">{children}</main>
-    </div>
-  );
-}
+const AppLayout = ({ children }) => {
+    return (
+        <div className="min-h-screen bg-gray-900 flex flex-col">
+            <Header />
+            
+            <main className="flex-1">
+                {children}
+            </main>
+             <Footer />
+        </div>
+    );
+};
+
+export default AppLayout;
