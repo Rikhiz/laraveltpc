@@ -1,77 +1,68 @@
-import React from 'react';
-import { LogOut, User } from 'lucide-react';
-import { router, usePage } from '@inertiajs/react';
+import React from "react";
+import { LogOut, User, ChevronRight, Settings } from "lucide-react";
 
-const AdminHeader = ({ currentPage = 'dashboard', menuItems = [], onNavigate }) => {
-  const { auth } = usePage().props;   // ambil session user dari inertia
-  const user = auth.user;
-
-  const handleLogout = () => {
-    router.post('/logout');
-  };
-
+const AdminHeader = ({ user, currentPage, menuItems = [], onNavigate }) => {
   return (
-    <aside className="w-64 bg-gray-900 border-r border-gray-800 flex flex-col">
-      {/* Title */}
-      <div className="h-16 flex items-center px-4 border-b border-gray-800">
-        <h1 className="text-white text-lg font-bold">
-          Welcome Admin {user ? `(${user.name})` : ""}
-        </h1>
+    <div className="flex flex-col h-full">
+      {/* User Info */}
+      <div className="p-4 border-b border-gray-700">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+            <User size={20} className="text-gray-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-medium truncate">{user?.name}</p>
+            <p className="text-gray-400 text-sm truncate">{user?.email}</p>
+          </div>
+        </div>
       </div>
 
-      {/* Menu */}
-      <nav className="flex-1 p-4 overflow-y-auto">
-        <div className="space-y-2">
-          {menuItems.map((item) => (
-            <button
-              key={item.path}
-              onClick={() => onNavigate(item.path)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition-all duration-200
-                ${currentPage === item.path
-                  ? 'bg-red-600 text-white shadow-lg'
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'}
-              `}
-            >
-              <item.icon size={20} />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
-        </div>
+      {/* Navigation Menu */}
+      <nav className="flex-1 px-4 py-8">
+        <ul className="space-y-3">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentPage === item.path;
+            return (
+              <li key={item.path}>
+                <button
+                  onClick={() => onNavigate(item.path)}
+                  className={`
+                    w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors
+                    ${
+                      isActive
+                        ? "bg-red-500 text-white shadow-md"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    }
+                  `}
+                >
+                  <Icon size={20} />
+                  <span className="font-medium">{item.label}</span>
+                  {isActive && <ChevronRight size={16} className="ml-auto" />}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
 
-      {/* User Info + Actions */}
-      <div className="p-4 border-t border-gray-800">
-        <div className="flex items-center space-x-3 mb-3">
-          <div className="w-10 h-10 bg-red-600 rounded-full flex items-center justify-center">
-            <span className="text-white font-semibold text-lg">
-              {user?.name?.charAt(0)?.toUpperCase()}
-            </span>
-          </div>
-          <div className="flex-1">
-            <p className="text-white font-medium text-sm">{user?.name}</p>
-            <p className="text-gray-400 text-xs">{user?.email}</p>
-            <p className="text-red-400 text-xs font-medium">Administrator</p>
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <button
-            onClick={() => router.visit('/profile')}
-            className="w-full flex items-center gap-2 px-3 py-2 text-gray-300 hover:bg-gray-700 hover:text-white rounded-md transition-colors text-left"
-          >
-            <User size={16} />
-            Profile
+      {/* Footer */}
+      <div className="p-4 border-t border-gray-700">
+        <div className="space-y-3">
+          <button className="w-full flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors">
+            <Settings size={20} />
+            <span>Settings</span>
           </button>
           <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 text-gray-300 hover:bg-gray-700 hover:text-red-400 rounded-md transition-colors text-left"
+            onClick={() => onNavigate("logout")}
+            className="w-full flex items-center gap-3 px-3 py-3 text-gray-300 hover:bg-red-600 hover:text-white rounded-lg transition-colors"
           >
-            <LogOut size={16} />
-            Logout
+            <LogOut size={20} />
+            <span>Logout</span>
           </button>
         </div>
       </div>
-    </aside>
+    </div>
   );
 };
 

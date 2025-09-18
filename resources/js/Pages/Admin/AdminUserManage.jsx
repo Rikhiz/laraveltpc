@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import {  usePage } from '@inertiajs/react';
+import { Inertia } from '@inertiajs/inertia';
 import { 
   Users, 
   Plus, 
@@ -18,8 +20,7 @@ import {
 } from 'lucide-react';
 
 const AdminUserManage = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { users, errors, flash } = usePage().props;
   const [showModal, setShowModal] = useState(false);
   const [modalMode, setModalMode] = useState('create'); // 'create', 'edit', 'view'
   const [selectedUser, setSelectedUser] = useState(null);
@@ -30,131 +31,78 @@ const AdminUserManage = () => {
     password_confirmation: '',
     role: 'player'
   });
-  const [errors, setErrors] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
-
-  const API_BASE = '/admin/users';
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // Fetch all users
-  const fetchUsers = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}`);
-      const data = await response.json();
-      
-      if (data.success) {
-        setUsers(data.users);
-      } else {
-        showAlert('error', 'Failed to fetch users');
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      showAlert('error', 'Failed to fetch users');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [processing, setProcessing] = useState(false);
 
   // Create new user
-  const createUser = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        },
-        body: JSON.stringify(formData)
-      });
+  const createUser = () => {
+    if (!formData.name || !formData.email || !formData.password) {
+      alert('Please fill in all required fields');
+      return;
+    }
 
-      const data = await response.json();
+    if (formData.password !== formData.password_confirmation) {
+      alert('Passwords do not match');
+      return;
+    }
 
-      if (data.success) {
-        showAlert('success', 'User created successfully');
+    setProcessing(true);
+    
+    Inertia.post('/admin/users/store', formData, {
+      onSuccess: () => {
         setShowModal(false);
         resetForm();
-        fetchUsers();
-      } else {
-        setErrors(data.errors || {});
-        showAlert('error', data.message || 'Failed to create user');
+        setProcessing(false);
+      },
+      onError: () => {
+        setProcessing(false);
       }
-    } catch (error) {
-      showAlert('error', 'Failed to create user');
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   // Update user
-  const updateUser = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/${selectedUser.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        },
-        body: JSON.stringify(formData)
-      });
+  const updateUser = () => {
+    if (!formData.name || !formData.email) {
+      alert('Please fill in all required fields');
+      return;
+    }
 
-      const data = await response.json();
+    if (formData.password && formData.password !== formData.password_confirmation) {
+      alert('Passwords do not match');
+      return;
+    }
 
-      if (data.success) {
-        showAlert('success', 'User updated successfully');
+    setProcessing(true);
+
+    Inertia.put(`/admin/users/update/${selectedUser.id}`, formData, {
+      onSuccess: () => {
         setShowModal(false);
         resetForm();
-        fetchUsers();
-      } else {
-        setErrors(data.errors || {});
-        showAlert('error', data.message || 'Failed to update user');
+        setProcessing(false);
+      },
+      onError: () => {
+        setProcessing(false);
       }
-    } catch (error) {
-      showAlert('error', 'Failed to update user');
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   // Delete user
-  const deleteUser = async (userId) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+  const deleteUser = (userId) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
 
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/${userId}`, {
-        method: 'DELETE',
-        headers: {
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        }
-      });
+    Inertia.delete(`/admin/users/delete/${userId}`);
+  };
 
-      const data = await response.json();
-
-      if (data.success) {
-        showAlert('success', 'User deleted successfully');
-        fetchUsers();
-      } else {
-        showAlert('error', data.message || 'Failed to delete user');
-      }
-    } catch (error) {
-      showAlert('error', 'Failed to delete user');
-    } finally {
-      setLoading(false);
-    }
+  // Toggle email verification
+  const toggleEmailVerification = (userId) => {
+    Inertia.put(`/admin/users/toggle-verification/${userId}`);
   };
 
   // Open modal for different modes
   const openModal = (mode, user = null) => {
     setModalMode(mode);
     setSelectedUser(user);
-    setErrors({});
     
     if (mode === 'create') {
       resetForm();
@@ -184,7 +132,6 @@ const AdminUserManage = () => {
     setShowModal(false);
     setSelectedUser(null);
     resetForm();
-    setErrors({});
   };
 
   // Reset form
@@ -198,30 +145,12 @@ const AdminUserManage = () => {
     });
   };
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (modalMode === 'create') {
-      createUser();
-    } else if (modalMode === 'edit') {
-      updateUser();
-    }
-  };
-
   // Handle input change
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
-    
-    // Clear error for this field
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: null
-      }));
-    }
   };
 
   // Filter users based on search and role
@@ -233,15 +162,6 @@ const AdminUserManage = () => {
     return matchesSearch && matchesRole;
   });
 
-  // Show alert
-  const showAlert = (type, message) => {
-    if (type === 'error') {
-      alert(`Error: ${message}`);
-    } else if (type === 'success') {
-      alert(`Success: ${message}`);
-    }
-  };
-
   // Format date
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('id-ID', {
@@ -252,6 +172,16 @@ const AdminUserManage = () => {
       minute: '2-digit'
     });
   };
+
+  // Display flash messages
+  React.useEffect(() => {
+    if (flash?.success) {
+      alert(`Success: ${flash.success}`);
+    }
+    if (flash?.error || errors?.message) {
+      alert(`Error: ${flash.error || errors.message}`);
+    }
+  }, [flash, errors]);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
@@ -344,16 +274,7 @@ const AdminUserManage = () => {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="7" className="text-center text-gray-400 py-8">
-                    <div className="flex justify-center items-center gap-2">
-                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                      Loading users...
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredUsers.length === 0 ? (
+              {filteredUsers.length === 0 ? (
                 <tr>
                   <td colSpan="7" className="text-center text-gray-400 py-8">
                     <div className="flex flex-col items-center gap-2">
@@ -388,17 +309,22 @@ const AdminUserManage = () => {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      {user.email_verified_at ? (
-                        <span className="text-green-400 text-sm flex items-center gap-1">
-                          <CheckCircle size={14} />
-                          Verified
-                        </span>
-                      ) : (
-                        <span className="text-red-400 text-sm flex items-center gap-1">
-                          <XCircle size={14} />
-                          Not Verified
-                        </span>
-                      )}
+                      <button
+                        onClick={() => toggleEmailVerification(user.id)}
+                        className="text-sm flex items-center gap-1 hover:opacity-70 transition-opacity"
+                      >
+                        {user.email_verified_at ? (
+                          <span className="text-green-400 flex items-center gap-1">
+                            <CheckCircle size={14} />
+                            Verified
+                          </span>
+                        ) : (
+                          <span className="text-red-400 flex items-center gap-1">
+                            <XCircle size={14} />
+                            Not Verified
+                          </span>
+                        )}
+                      </button>
                     </td>
                     <td className="py-3 px-4 text-gray-400 text-sm">
                       {formatDate(user.created_at)}
@@ -468,7 +394,9 @@ const AdminUserManage = () => {
                   placeholder="Enter user name"
                 />
                 {errors.name && (
-                  <p className="text-red-400 text-sm mt-1">{errors.name[0]}</p>
+                  <p className="text-red-400 text-sm mt-1">
+                    {Array.isArray(errors.name) ? errors.name[0] : errors.name}
+                  </p>
                 )}
               </div>
 
@@ -486,7 +414,9 @@ const AdminUserManage = () => {
                   placeholder="Enter email address"
                 />
                 {errors.email && (
-                  <p className="text-red-400 text-sm mt-1">{errors.email[0]}</p>
+                  <p className="text-red-400 text-sm mt-1">
+                    {Array.isArray(errors.email) ? errors.email[0] : errors.email}
+                  </p>
                 )}
               </div>
 
@@ -505,7 +435,9 @@ const AdminUserManage = () => {
                   <option value="admin">Admin</option>
                 </select>
                 {errors.role && (
-                  <p className="text-red-400 text-sm mt-1">{errors.role[0]}</p>
+                  <p className="text-red-400 text-sm mt-1">
+                    {Array.isArray(errors.role) ? errors.role[0] : errors.role}
+                  </p>
                 )}
               </div>
 
@@ -525,7 +457,9 @@ const AdminUserManage = () => {
                       placeholder="Enter password"
                     />
                     {errors.password && (
-                      <p className="text-red-400 text-sm mt-1">{errors.password[0]}</p>
+                      <p className="text-red-400 text-sm mt-1">
+                        {Array.isArray(errors.password) ? errors.password[0] : errors.password}
+                      </p>
                     )}
                   </div>
 
@@ -582,15 +516,15 @@ const AdminUserManage = () => {
                   <button
                     type="button"
                     onClick={() => modalMode === 'create' ? createUser() : updateUser()}
-                    disabled={loading}
+                    disabled={processing}
                     className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded flex items-center gap-2 transition-colors"
                   >
-                    {loading ? (
+                    {processing ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                     ) : (
                       <Save size={16} />
                     )}
-                    {loading ? 'Saving...' : modalMode === 'create' ? 'Create User' : 'Update User'}
+                    {processing ? 'Saving...' : modalMode === 'create' ? 'Create User' : 'Update User'}
                   </button>
                 )}
               </div>

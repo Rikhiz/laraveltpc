@@ -5,12 +5,11 @@ use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
-use App\Http\Controllers\StartggOAuthController;
+use App\Http\Controllers\Admin\AdminUserController;
+
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Admin\AdminTournamentsController;
 use App\Http\Controllers\TournamentController;
-use Illuminate\Auth\Middleware\Authenticate;
-use Illuminate\Session\Middleware\AuthenticateSession;
 
 // Main home page (anonymous users)
 Route::get('/', function () {
@@ -31,6 +30,17 @@ Route::prefix('admin')->middleware(['auth', 'verified'])->group(function () {
 
     // Halaman tournaments (Inertia)
     Route::get('/tournaments', [AdminTournamentsController::class, 'index'])->name('tournaments');
+    Route::get('/users', [AdminUserController::class, 'index'])->name('admin.users');
+});
+// Admin User Management API Routes
+Route::prefix('admin/users')->middleware(['auth', 'verified'])->group(function () {
+    Route::get('/get', [AdminUserController::class, 'getUsers']);
+    Route::post('/store', [AdminUserController::class, 'store']);
+    Route::get('/show/{id}', [AdminUserController::class, 'show']);
+    Route::put('/update/{id}', [AdminUserController::class, 'update']);
+    Route::delete('/delete/{id}', [AdminUserController::class, 'destroy']);
+    Route::get('/stats', [AdminUserController::class, 'getStats']);
+    Route::put('/toggle-verification/{id}', [AdminUserController::class, 'toggleEmailVerification']);
 });
 
 Route::prefix('admin/tournaments')->group(function () {
@@ -54,14 +64,6 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard routes
     Route::get('/admin', [DashboardController::class, 'index'])->name('admin.dashboard');
-    
-    // OAuth routes
-    Route::prefix('oauth/startgg')->group(function () {
-        Route::post('/callback', [StartggOAuthController::class, 'callback'])->name('oauth.startgg.callback');
-        Route::get('/user', [StartggOAuthController::class, 'getUser'])->name('oauth.startgg.user');
-        Route::post('/disconnect', [StartggOAuthController::class, 'disconnect'])->name('oauth.startgg.disconnect');
-    });
-    
     // Tournament management routes
     Route::prefix('admin/tournaments')->middleware('admin')->group(function () {
         Route::post('/', [TournamentController::class, 'store'])->name('tournaments.store');
